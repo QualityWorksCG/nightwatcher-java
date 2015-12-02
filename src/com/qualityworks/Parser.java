@@ -46,11 +46,11 @@ public class Parser {
 	}	
 	
 	
-   /**
+      /**
 	* Retrieves XML test results and returns the converted JSON 
 	* @param  path  project path to the test results
 	* @return       The converted JSON object
-    */	
+        */	
 	private JSONObject toJSON(String path){
 
 		String filePath = ""; 
