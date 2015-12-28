@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
+
 // Vender imports
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,11 +15,12 @@ import org.json.XML;
 
 public class Parser {
 	
+	Git git = new Git();
 	private String xmlResults = "";
 	private BufferedReader br = null;
 	private String currentDirectory = System.getProperty("user.dir");
-	public final String URL  = "http://localhost:3000/tests";
-	private static String  rawJson = "{'url' : '', type : 'JAVA', 'results': '', 'currentOptions' : {repo_token: ''}}";
+	public final static String URL  = "http://nightwatcher.io/tests";
+	private static String  rawJson = "{'url' : '', type : 'JAVA', 'res ults': '', 'currentOptions' : {repo_token: '', git_data : ''}}";
 
 	
 	/**
@@ -37,11 +39,12 @@ public class Parser {
 			jsonObj.put("url", URL);
 			jsonObj.put("results", this.toJSON(path));
 			jsonObj.getJSONObject("currentOptions").put("repo_token", this.getOptions());
-
+			jsonObj.getJSONObject("currentOptions").put("git_data", this.git.getGitData());
+			
 		}catch (JSONException ex) {
 			System.err.println(ex.getMessage());
 		}
-
+		
 		return jsonObj.toString();
 	}	
 	
@@ -51,7 +54,7 @@ public class Parser {
 	* @param  path  project path to the test results
 	* @return       The converted JSON object
         */	
-	private JSONObject toJSON(String path){
+	private JSONObject toJSON(String path){ 
 
 		String filePath = ""; 
 		String sCurrentLine = "";
