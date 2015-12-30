@@ -17,87 +17,60 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Git {
-	
+
 	private static String currentDirectory = System.getProperty("user.dir");
-	private static String REGEX_BRANCH = "^ref: refs\\/heads\\/(\\w+)$";
-	private static String REGEX_LINE = "\n(.*)";
-	private static String REGEX_AUTHOR = "(author) (.*) <(.*)>";
-	private static String REGEX_COMMITTER = "committer (.*) <(.*)>";
+	private static String REGEX_COMMIT_DETAILS = "^author (.*?) <(.*?)>.*^committer (.*?) <(.*?)>.*^[\\S\\s]*?(.*)";
+	private static String REGEX_BRANCH = "^ref: refs\\/heads\\/(.*)$";
+	private Pattern regex_commit_details = Pattern.compile(REGEX_COMMIT_DETAILS,Pattern.MULTILINE|Pattern.DOTALL|Pattern.CASE_INSENSITIVE);
 	private Pattern regex_branch = Pattern.compile(REGEX_BRANCH);
-	private Pattern regex_line = Pattern.compile(REGEX_LINE);
-	private Pattern regex_author = Pattern.compile(REGEX_AUTHOR);
-	private Pattern regex_committer = Pattern.compile(REGEX_COMMITTER);
 	private String git_commit = "{git_commit : '' , git_branch: ''}";
 	private String git_data = "{head: {id: '', author_name: 'Unknown Author', author_email: '', committer_name: 'Unknown Committer', committer_email: '', message: 'Unknown Commit Message'}, branch: '', remotes: []}";
 	private JSONObject get_data = null;
-	
+
 	public JSONObject getGitData(){
 		String knownCommit="", knownBranch="", localGitRawJSON="";
-		
+
 		localGitRawJSON = localGit(knownCommit,knownBranch);
-		
+
 		JSONObject jsonObj = null;
 		try{
-			
+
 			jsonObj = new JSONObject(localGitRawJSON);
 			get_data = new JSONObject(git_data);
-			
+
 			if(jsonObj.get("git_commit") != "")
 				get_data.getJSONObject("head").put("id",jsonObj.get("git_commit"));
-			
+
 			if(jsonObj.get("git_branch") != "")
 				get_data.put("branch",jsonObj.get("git_branch"));
-			
+
 			try {
-				
+
 				 String line,info = "";
-				 
+
 				  Process p = Runtime.getRuntime().exec("git cat-file -p " + get_data.getJSONObject("head").get("id"));
 				  BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				  while ((line = input.readLine()) != null) {
 					  info = info + line + "\n";
 				  }
-				  
-				  Matcher regex_line_matcher = this.regex_line.matcher(info);
-				  int count = 0;
-				  while (regex_line_matcher.find()){
-					  count++;
-					  String details = "";
-					  String[] words = null;
-					  
-					  details = regex_line_matcher.group(1).toString().trim();
-					  
+				  Matcher regex_commit_matcher = this.regex_commit_details.matcher(info);
+				  while (regex_commit_matcher.find()){
+
 					  // Get author details
-					  if(this.regex_author.matcher(details).find()){
-						  details = details.replaceAll("<", "");
-						  details = details.replaceAll(">", "");
-						  
-						  words = details.split(" ");
-						  
-						  get_data.getJSONObject("head").put("author_name",words[1].toString().trim() + " " + words[2].toString().trim());
-						  get_data.getJSONObject("head").put("author_email",words[3].toString().trim());
-					  }  
-					  
+					  get_data.getJSONObject("head").put("author_name",regex_commit_matcher.group(1).toString().trim());
+					  get_data.getJSONObject("head").put("author_email",regex_commit_matcher.group(2).toString().trim());
+
 					  // Get committer details
-					  if(this.regex_committer.matcher(details).find()){
-						  details = details.replaceAll("<", "");
-						  details = details.replaceAll(">", "");
-						  
-						  words = details.split(" ");
-						  
-						  get_data.getJSONObject("head").put("committer_name",words[1].toString().trim() + " " + words[2].toString().trim());
-						  get_data.getJSONObject("head").put("committer_email",words[3].toString().trim());
-						  
-					  }
-					  
+					  get_data.getJSONObject("head").put("committer_name",regex_commit_matcher.group(3).toString().trim());
+					  get_data.getJSONObject("head").put("committer_email",regex_commit_matcher.group(4).toString().trim());
+
+
 					  // Get message details
-					  if(count == 4){
-						  get_data.getJSONObject("head").put("message",details.toString().trim());
-					  }
+					  get_data.getJSONObject("head").put("message",regex_commit_matcher.group(5).toString().trim());
 				  }
 				  input.close();
 			} catch (IOException e) {
-				
+
 				e.printStackTrace();
 			}
 
@@ -107,7 +80,7 @@ public class Git {
 
 		return get_data;
 	}
-	
+
 	public void remotes(){
 		try{
 			List<String> command = new ArrayList<String>();
@@ -125,49 +98,49 @@ public class Git {
 
 		String line = null;
 		while ((line = reader.readLine()) != null){
-		   System.out.println(line);
-
+			System.out.println(line);
 		}
 		}catch(IOException e){
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * Retrieves local git data from .git
-	 * @param  
-	 * @param  
+	 * @param
+	 * @param
 	 * @return       The JSON string
 	 */
 	public String localGit(String knownCommit, String knownBranch){
 		String filePath, commitPath, commit = null, head = null, branch = null, git;
-		
+
 		git = Git.currentDirectory + "/" + ".git";
 		filePath = Git.currentDirectory + "/" + ".git" + "/" + "HEAD";
-		
+
 		File gitDir = new File(git);
 		if (gitDir.isDirectory()) {
-				
+
 				try {
 				    BufferedReader br = Files.newBufferedReader(Paths.get(filePath), Charset.forName("ISO-8859-1"));
 				    while ((head = br.readLine()) != null) {
 				        head = new String(head.getBytes("UTF-8")).trim();
-				        
+
 				        Matcher regex_branch_matcher = this.regex_branch.matcher(head);
+
 						if(regex_branch_matcher.find())
 							branch = regex_branch_matcher.group(1).trim();
-						
+
 						if(branch==null)
 							return this.git_commit = "{git_commit: '" + head + "'";
-						
-						commitPath = Git.currentDirectory + "/.git/refs/heads/" + branch; 
-						
+
+						commitPath = Git.currentDirectory + "/.git/refs/heads/" + branch;
+
 						try {
 						    BufferedReader br2 = Files.newBufferedReader(Paths.get(commitPath), Charset.forName("ISO-8859-1"));
 						    while ((commit = br2.readLine()) != null) {
 						    	commit = new String(commit.getBytes("UTF-8")).trim();
-						 
-						    	return this.git_commit = "{git_commit : '" + commit + "' , git_branch: '" + branch + "'}";
+						    	this.git_commit = "{git_commit : '" + commit + "' , git_branch: '" + branch + "'}";
+						    	return this.git_commit;
 						    }
 						} catch (IOException ex) {
 						   ex.printStackTrace();
@@ -176,7 +149,7 @@ public class Git {
 				} catch (IOException ex) {
 				    ex.printStackTrace();
 				}
-			} 
+			}
 		return this.git_commit;
 	}
 }
