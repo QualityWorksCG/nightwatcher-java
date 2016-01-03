@@ -17,7 +17,7 @@ public class Parser {
 	private String xmlResults = "";
 	private BufferedReader br = null;
 	private String currentDirectory = System.getProperty("user.dir");
-	public final static String URL = "http://127.0.0.1:3001/tests";
+	public final static String URL = "http://nightwatcher.nodeqa.io/tests";
 	private static String rawJson = "{'url' : '', type : 'JAVA', 'results': '', 'currentOptions' : {repo_token: '', git : ''}}";
 
 	/**
