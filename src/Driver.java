@@ -6,7 +6,7 @@ public class Driver {
 
 		Nightwatcher nightwatcher = new Nightwatcher();
 		// Add 'sample.txt' with testNG XML test results to root folder to test
-		nightwatcher.sendToNightwatcher("sample.txt");
+		nightwatcher.sendToNightwatcher("sample.xml");
 
 	}
 }
